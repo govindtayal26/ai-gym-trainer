@@ -1532,7 +1532,9 @@ if st.session_state.page == "Workout":
                 workout_enabled=True,
             )
 
-            st.rerun()
+            # st.button() already triggers a Streamlit rerun.
+            # Do NOT call st.rerun() here because it can tear down the
+            # active WebRTC connection and make the Start button appear stuck.
 
         if st.button(
             "⏹️  STOP WORKOUT",
@@ -1540,7 +1542,8 @@ if st.session_state.page == "Workout":
         ):
             st.session_state.workout_started = False
             ai_state.update(active=False, workout_enabled=False)
-            st.rerun()
+            # The button itself causes the required Streamlit rerun.
+            # Avoid an extra rerun so WebRTC is not unnecessarily torn down.
 
         ui_html("</div>")
 
