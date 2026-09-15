@@ -757,6 +757,7 @@ class AIState:
     set_number: int = 1
     calories: float = 0.0
     active: bool = False
+    workout_enabled: bool = False
     last_rep_time: float = 0.0
     show_skeleton: bool = True
 
@@ -778,6 +779,7 @@ class AIState:
                 "set_number": self.set_number,
                 "calories": self.calories,
                 "active": self.active,
+                "workout_enabled": self.workout_enabled,
                 "last_rep_time": self.last_rep_time,
                 "show_skeleton": self.show_skeleton,
             }
@@ -822,6 +824,7 @@ def reset_ai():
         set_number=1,
         calories=0.0,
         active=False,
+        workout_enabled=False,
     )
 
 
@@ -954,6 +957,19 @@ class AIWorkoutProcessor(VideoProcessorBase):
     def recv(self, frame):
         image = frame.to_ndarray(format="bgr24")
         image = cv2.flip(image, 1)
+
+        # Keep the browser camera connected, but don't run workout AI
+        # until the user explicitly presses START WORKOUT.
+        if not ai_state.snapshot()["workout_enabled"]:
+            self.draw_text(
+                image,
+                "PRESS START TO BEGIN",
+                (35, 90),
+                0.75,
+                (80, 190, 255),
+                2,
+            )
+            return frame.from_ndarray(image, format="bgr24")
 
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.pose.process(rgb)
@@ -1488,8 +1504,14 @@ if st.session_state.page == "Workout":
             step=0.5,
         )
 
+        start_label = (
+            "🔄  RESET WORKOUT"
+            if st.session_state.workout_started
+            else "🚀  START WORKOUT"
+        )
+
         if st.button(
-            "🚀  START / RESET WORKOUT",
+            start_label,
             type="primary",
             use_container_width=True,
         ):
@@ -1506,6 +1528,7 @@ if st.session_state.page == "Workout":
                 exercise=st.session_state.exercise,
                 set_number=1,
                 active=True,
+                workout_enabled=True,
             )
 
             st.rerun()
@@ -1515,7 +1538,7 @@ if st.session_state.page == "Workout":
             use_container_width=True,
         ):
             st.session_state.workout_started = False
-            ai_state.update(active=False)
+            ai_state.update(active=False, workout_enabled=False)
             st.rerun()
 
         ui_html("</div>")
