@@ -958,15 +958,16 @@ class AIWorkoutProcessor(VideoProcessorBase):
         image = frame.to_ndarray(format="bgr24")
         image = cv2.flip(image, 1)
 
-        # Keep the browser camera connected, but don't run workout AI
-        # until the user explicitly presses START WORKOUT.
-        if not ai_state.snapshot()["workout_enabled"]:
+        # Streamlit UI buttons and the WebRTC worker run in different
+        # execution contexts. Use shared AI state as the real start/stop gate.
+        state = ai_state.snapshot()
+        if not state["workout_enabled"]:
             self.draw_text(
                 image,
                 "PRESS START TO BEGIN",
                 (35, 90),
                 0.75,
-                (80, 190, 255),
+                (80, 220, 255),
                 2,
             )
             return frame.from_ndarray(image, format="bgr24")
